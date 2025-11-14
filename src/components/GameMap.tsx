@@ -81,54 +81,66 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
   const getTileColor = (x: number, y: number): string => {
     const tile = map[y][x];
 
-    // Player is always white
+    // Player is always bright white
     if (player.position.x === x && player.position.y === y) {
-      return 'text-white';
+      return 'text-white font-bold';
     }
 
-    // Boss is red
-    if (boss && boss.position.x === x && boss.position.y === y) {
-      return 'text-red-500 font-bold';
-    }
+    // Only show enemies if tile is visible
+    if (tile.visible) {
+      // Boss is bright red
+      if (boss && boss.position.x === x && boss.position.y === y) {
+        return 'text-red-500 font-bold';
+      }
 
-    // Enemy colors
-    const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
-    if (enemy && tile.visible) {
-      switch (enemy.type) {
-        case EnemyType.Mephit:
-          return 'text-yellow-400';
-        case EnemyType.MissileMephit:
-          return 'text-orange-400';
-        case EnemyType.Golem:
-          return 'text-cyan-400';
-        case EnemyType.EliteMephit:
-          return 'text-purple-400';
-        default:
-          return 'text-red-400';
+      // Enemy colors (only if visible)
+      const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
+      if (enemy) {
+        switch (enemy.type) {
+          case EnemyType.Mephit:
+            return 'text-yellow-300 font-bold';
+          case EnemyType.MissileMephit:
+            return 'text-orange-500 font-bold';
+          case EnemyType.Golem:
+            return 'text-cyan-400 font-bold';
+          case EnemyType.EliteMephit:
+            return 'text-purple-500 font-bold';
+          default:
+            return 'text-red-400 font-bold';
+        }
+      }
+
+      // Target cursor
+      if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
+        return 'text-yellow-300 font-bold bg-yellow-900/30';
       }
     }
 
-    // Target cursor
-    if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
-      return 'text-yellow-300 font-bold';
-    }
-
-    // Tile colors
+    // Explored but not currently visible - darker colors
     if (!tile.visible && tile.explored) {
-      return 'text-gray-600';
+      switch (tile.type) {
+        case TileType.Wall:
+          return 'text-gray-500';
+        case TileType.Floor:
+          return 'text-gray-600';
+        default:
+          return 'text-gray-600';
+      }
     }
 
-    if (!tile.visible) {
-      return 'text-gray-900';
+    // Not explored - completely dark
+    if (!tile.visible && !tile.explored) {
+      return 'text-gray-950';
     }
 
+    // Currently visible tiles - bright colors
     switch (tile.type) {
       case TileType.Wall:
-        return 'text-gray-400';
+        return 'text-gray-300';
       case TileType.Floor:
-        return 'text-gray-700';
+        return 'text-gray-400';
       default:
-        return 'text-gray-500';
+        return 'text-gray-400';
     }
   };
 
@@ -142,8 +154,8 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
   const endY = Math.min(startY + viewportHeight, map.length);
 
   return (
-    <div className="bg-black p-4 rounded border border-gray-700 overflow-hidden">
-      <div className="font-mono text-xs leading-tight whitespace-pre">
+    <div className="bg-gray-950 p-4 rounded border border-gray-600 overflow-hidden">
+      <div className="font-mono text-base leading-tight whitespace-pre">
         {Array.from({ length: endY - startY }, (_, dy) => {
           const y = startY + dy;
           return (
@@ -153,7 +165,7 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
                 const char = getTileChar(x, y);
                 const color = getTileColor(x, y);
                 return (
-                  <span key={x} className={`${color} w-3 text-center`}>
+                  <span key={x} className={`${color} w-4 text-center`}>
                     {char}
                   </span>
                 );
