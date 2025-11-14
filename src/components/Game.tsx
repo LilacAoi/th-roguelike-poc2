@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { GameState, Position, Weapon, Equipment, Rune } from '../types/game';
+import { WeaponType } from '../types/game';
 import { initializeGame, spawnBoss } from '../utils/gameInit';
 import { calculateFOV } from '../utils/fov';
 import { isPositionWalkable, getDistance } from '../utils/mapGenerator';
@@ -10,6 +11,7 @@ import {
   getEnemyAtPosition,
   bossSpecialAbility,
   checkPhaseTransition,
+  calculatePlayerStats,
 } from '../utils/combat';
 import { moveEnemy, canEnemyAttackPlayer } from '../utils/ai';
 import { getRandomRarity, generateWeapon, generateEquipment, generateRune } from '../utils/itemGenerator';
@@ -363,6 +365,155 @@ export const Game: React.FC = () => {
     [gameState]
   );
 
+  // Rest handler
+  const handleRest = useCallback(
+    (restUntilFull: boolean = false) => {
+      setGameState((prev) => {
+        const playerStats = calculatePlayerStats(prev.player);
+
+        // Check if already at full HP
+        if (playerStats.hp >= playerStats.maxHp) {
+          addMessage('Already at full health!');
+          return prev;
+        }
+
+        // Check if any visible enemies are nearby
+        const visibleEnemies = prev.enemies.filter((enemy) => {
+          const tile = prev.map[enemy.position.y]?.[enemy.position.x];
+          return tile?.visible;
+        });
+
+        const visibleBoss = prev.boss && prev.map[prev.boss.position.y]?.[prev.boss.position.x]?.visible;
+
+        if (visibleEnemies.length > 0 || visibleBoss) {
+          addMessage('Cannot rest with enemies nearby!');
+          return { ...prev, isResting: false, restingForFullHP: false };
+        }
+
+        // Recover HP
+        const healAmount = Math.min(5, playerStats.maxHp - prev.player.stats.hp);
+        const newHp = prev.player.stats.hp + healAmount;
+
+        addMessage(`Resting... (+${healAmount} HP)`);
+
+        // Deep copy the map to ensure React detects changes
+        const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+
+        const newState = {
+          ...prev,
+          map: newMap,
+          player: {
+            ...prev.player,
+            stats: {
+              ...prev.player.stats,
+              hp: newHp,
+            },
+          },
+          isResting: true,
+          restingForFullHP: restUntilFull,
+          turnCount: prev.turnCount + 1,
+        };
+
+        // Process enemy turns during rest
+        newState.enemies.forEach((enemy) => {
+          moveEnemy(enemy, newState.player.position, newMap, newState.enemies);
+
+          // Check if enemy can attack player
+          if (canEnemyAttackPlayer(enemy, newState.player.position)) {
+            const result = enemyAttack(enemy, newState.player);
+            newState.messageLog.push(result.message);
+
+            // Check if player died
+            if (result.killed) {
+              newState.gameStatus = 'defeat';
+              newState.isResting = false;
+              newState.restingForFullHP = false;
+            }
+          }
+        });
+
+        // Boss turn
+        if (newState.boss) {
+          moveEnemy(newState.boss, newState.player.position, newMap, [
+            ...newState.enemies,
+            newState.boss,
+          ]);
+
+          // Boss attack
+          if (canEnemyAttackPlayer(newState.boss, newState.player.position)) {
+            const result = enemyAttack(newState.boss, newState.player);
+            newState.messageLog.push(result.message);
+
+            // Check if player died
+            if (result.killed) {
+              newState.gameStatus = 'defeat';
+              newState.isResting = false;
+              newState.restingForFullHP = false;
+            }
+          }
+
+          // Boss special abilities
+          const abilityMessages = bossSpecialAbility(newState.boss, newState.player, newState.enemies);
+          newState.messageLog.push(...abilityMessages);
+
+          // Check phase transition
+          if (checkPhaseTransition(newState.boss)) {
+            newState.messageLog.push(`${newState.boss.name} enters Phase 2!`);
+          }
+        }
+
+        // Update FOV after rest
+        calculateFOV(newMap, newState.player.position, 10);
+
+        return newState;
+      });
+    },
+    [addMessage]
+  );
+
+  // Auto-rest effect
+  useEffect(() => {
+    if (gameState.isResting && gameState.restingForFullHP) {
+      const playerStats = calculatePlayerStats(gameState.player);
+
+      // Check if we should stop resting
+      if (playerStats.hp >= playerStats.maxHp) {
+        addMessage('Fully rested!');
+        setGameState((prev) => ({
+          ...prev,
+          isResting: false,
+          restingForFullHP: false,
+        }));
+        return;
+      }
+
+      // Check for visible enemies
+      const visibleEnemies = gameState.enemies.filter((enemy) => {
+        const tile = gameState.map[enemy.position.y]?.[enemy.position.x];
+        return tile?.visible;
+      });
+
+      const visibleBoss = gameState.boss && gameState.map[gameState.boss.position.y]?.[gameState.boss.position.x]?.visible;
+
+      if (visibleEnemies.length > 0 || visibleBoss) {
+        addMessage('Rest interrupted by enemy!');
+        setGameState((prev) => ({
+          ...prev,
+          isResting: false,
+          restingForFullHP: false,
+        }));
+        return;
+      }
+
+      // Continue resting
+      const timer = setTimeout(() => {
+        handleRest(true);
+      }, 200);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.isResting, gameState.restingForFullHP, gameState.player.stats.hp, handleRest, addMessage, gameState]);
+
   // Keyboard handler
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -374,17 +525,30 @@ export const Game: React.FC = () => {
         return;
       }
 
-      // Target mode toggle
-      if (e.key === 'f' || e.key === 'F') {
-        setGameState((prev) => ({
-          ...prev,
-          targetMode: !prev.targetMode,
-          targetPosition: prev.targetMode ? null : prev.player.position,
-        }));
+      // Rest (R key for single rest, Shift+R for rest until full HP)
+      if (e.key === 'r' || e.key === 'R') {
+        const restUntilFull = e.shiftKey;
+        handleRest(restUntilFull);
         return;
       }
 
-      // Confirm ranged attack
+      // Target mode toggle / Execute ranged attack
+      if (e.key === 'f' || e.key === 'F') {
+        if (gameState.targetMode) {
+          // If already in target mode, execute the attack
+          handleRangedAttack();
+        } else {
+          // If not in target mode, toggle it on
+          setGameState((prev) => ({
+            ...prev,
+            targetMode: true,
+            targetPosition: prev.player.position,
+          }));
+        }
+        return;
+      }
+
+      // Confirm ranged attack (Enter also works)
       if (e.key === 'Enter' && gameState.targetMode) {
         handleRangedAttack();
         return;
@@ -436,7 +600,7 @@ export const Game: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState, handlePlayerMove, handleTargetMove, handleRangedAttack]);
+  }, [gameState, handlePlayerMove, handleTargetMove, handleRangedAttack, handleRest]);
 
   const handleStartGame = () => {
     setGameState((prev) => {
@@ -450,7 +614,12 @@ export const Game: React.FC = () => {
 
   const handleEquipWeapon = (weapon: Weapon) => {
     setGameState((prev) => {
-      const oldWeapon = prev.player.weapon;
+      // Determine if weapon is melee or ranged
+      const meleeTypes = [WeaponType.Sword, WeaponType.Staff, WeaponType.Hammer] as string[];
+      const isMelee = meleeTypes.includes(weapon.type as string);
+
+      // Get the old weapon from the correct slot
+      const oldWeapon = isMelee ? prev.player.meleeWeapon : prev.player.rangedWeapon;
       const newWeapons = prev.player.inventory.weapons.filter((w) => w.id !== weapon.id);
 
       if (oldWeapon) {
@@ -463,7 +632,8 @@ export const Game: React.FC = () => {
         ...prev,
         player: {
           ...prev.player,
-          weapon,
+          meleeWeapon: isMelee ? weapon : prev.player.meleeWeapon,
+          rangedWeapon: isMelee ? prev.player.rangedWeapon : weapon,
           inventory: {
             ...prev.player.inventory,
             weapons: newWeapons,

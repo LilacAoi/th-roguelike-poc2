@@ -62,22 +62,47 @@ export const HUD: React.FC<HUDProps> = ({ gameState }) => {
       </div>
 
       {/* Weapon Info */}
-      {player.weapon && (
+      <div className="space-y-2">
+        {/* Melee Weapon */}
         <div className="bg-gray-900 p-3 rounded">
-          <h3 className="text-sm font-semibold text-purple-400 mb-2">Equipped Weapon</h3>
-          <div className="text-sm">
-            <p className={`font-semibold mb-1 rarity-${player.weapon.rarity}`}>
-              {player.weapon.name}
-            </p>
-            <div className="grid grid-cols-2 gap-1 text-xs text-gray-400">
-              <span>Damage: {player.weapon.damage}</span>
-              <span>Range: {player.weapon.range}</span>
-              <span>Crit: {(player.weapon.critChance * 100).toFixed(0)}%</span>
-              <span>Mult: {player.weapon.critMultiplier.toFixed(1)}x</span>
+          <h3 className="text-sm font-semibold text-red-400 mb-2">Melee Weapon</h3>
+          {player.meleeWeapon ? (
+            <div className="text-sm">
+              <p className={`font-semibold mb-1 rarity-${player.meleeWeapon.rarity}`}>
+                {player.meleeWeapon.name}
+              </p>
+              <div className="grid grid-cols-2 gap-1 text-xs text-gray-400">
+                <span>Damage: {player.meleeWeapon.damage}</span>
+                <span>Range: {player.meleeWeapon.range}</span>
+                <span>Crit: {(player.meleeWeapon.critChance * 100).toFixed(0)}%</span>
+                <span>Mult: {player.meleeWeapon.critMultiplier.toFixed(1)}x</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-xs text-gray-500">No melee weapon equipped</p>
+          )}
         </div>
-      )}
+
+        {/* Ranged Weapon */}
+        <div className="bg-gray-900 p-3 rounded">
+          <h3 className="text-sm font-semibold text-blue-400 mb-2">Ranged Weapon</h3>
+          {player.rangedWeapon ? (
+            <div className="text-sm">
+              <p className={`font-semibold mb-1 rarity-${player.rangedWeapon.rarity}`}>
+                {player.rangedWeapon.name}
+              </p>
+              <div className="grid grid-cols-2 gap-1 text-xs text-gray-400">
+                <span>Damage: {player.rangedWeapon.damage}</span>
+                <span>Range: {player.rangedWeapon.range}</span>
+                <span>Crit: {(player.rangedWeapon.critChance * 100).toFixed(0)}%</span>
+                <span>Mult: {player.rangedWeapon.critMultiplier.toFixed(1)}x</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">No ranged weapon equipped</p>
+          )}
+        </div>
+      </div>
 
       {/* Boss HP Bar */}
       {boss && (

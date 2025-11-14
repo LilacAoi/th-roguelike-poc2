@@ -130,7 +130,8 @@ export function initializeGame(): GameState {
 
   // Create player
   const playerPos = getRandomFloorPosition(map);
-  const startingWeapon = generateWeapon(WeaponType.Pistol, undefined, 1);
+  const startingMeleeWeapon = generateWeapon(WeaponType.Sword, undefined, 1);
+  const startingRangedWeapon = generateWeapon(WeaponType.Pistol, undefined, 1);
 
   const player: Player = {
     position: playerPos,
@@ -145,7 +146,8 @@ export function initializeGame(): GameState {
     },
     level: 1,
     experience: 0,
-    weapon: startingWeapon,
+    meleeWeapon: startingMeleeWeapon,
+    rangedWeapon: startingRangedWeapon,
     equipment: {
       [EquipmentSlot.Helm]: generateEquipment(EquipmentSlot.Helm, undefined, 1),
       [EquipmentSlot.Torso]: generateEquipment(EquipmentSlot.Torso, undefined, 1),
@@ -232,6 +234,8 @@ export function initializeGame(): GameState {
     messageLog: ['Welcome to TooHuman Roguelike!', 'Use arrow keys to move, F to target enemies.'],
     targetMode: false,
     targetPosition: null,
+    isResting: false,
+    restingForFullHP: false,
   };
 }
 

@@ -17,14 +17,14 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
       return '@';
     }
 
-    // Check if boss is on this tile
-    if (boss && boss.position.x === x && boss.position.y === y) {
+    // Check if boss is on this tile (only show if visible)
+    if (boss && boss.position.x === x && boss.position.y === y && tile.visible) {
       return 'G';
     }
 
-    // Check if any enemy is on this tile
+    // Check if any enemy is on this tile (only show if visible)
     const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
-    if (enemy) {
+    if (enemy && tile.visible) {
       switch (enemy.type) {
         case EnemyType.Mephit:
           return 'm';
@@ -37,11 +37,6 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
         default:
           return 'e';
       }
-    }
-
-    // Check if this is the target position
-    if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
-      return 'X';
     }
 
     // Show tile based on visibility
@@ -80,68 +75,78 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
 
   const getTileColor = (x: number, y: number): string => {
     const tile = map[y][x];
+    let colorClass = '';
 
     // Player is always bright white
     if (player.position.x === x && player.position.y === y) {
-      return 'text-white font-bold';
+      colorClass = 'text-white font-bold';
     }
-
     // Only show enemies if tile is visible
-    if (tile.visible) {
+    else if (tile.visible) {
       // Boss is bright red
       if (boss && boss.position.x === x && boss.position.y === y) {
-        return 'text-red-500 font-bold';
+        colorClass = 'text-red-500 font-bold';
       }
-
       // Enemy colors (only if visible)
-      const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
-      if (enemy) {
-        switch (enemy.type) {
-          case EnemyType.Mephit:
-            return 'text-yellow-300 font-bold';
-          case EnemyType.MissileMephit:
-            return 'text-orange-500 font-bold';
-          case EnemyType.Golem:
-            return 'text-cyan-400 font-bold';
-          case EnemyType.EliteMephit:
-            return 'text-purple-500 font-bold';
-          default:
-            return 'text-red-400 font-bold';
+      else {
+        const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
+        if (enemy) {
+          switch (enemy.type) {
+            case EnemyType.Mephit:
+              colorClass = 'text-yellow-300 font-bold';
+              break;
+            case EnemyType.MissileMephit:
+              colorClass = 'text-orange-500 font-bold';
+              break;
+            case EnemyType.Golem:
+              colorClass = 'text-cyan-400 font-bold';
+              break;
+            case EnemyType.EliteMephit:
+              colorClass = 'text-purple-500 font-bold';
+              break;
+            default:
+              colorClass = 'text-red-400 font-bold';
+          }
+        }
+        // Currently visible tiles - bright colors
+        else {
+          switch (tile.type) {
+            case TileType.Wall:
+              colorClass = 'text-gray-300';
+              break;
+            case TileType.Floor:
+              colorClass = 'text-gray-400';
+              break;
+            default:
+              colorClass = 'text-gray-400';
+          }
         }
       }
-
-      // Target cursor
-      if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
-        return 'text-yellow-300 font-bold bg-yellow-900/30';
-      }
     }
-
     // Explored but not currently visible - darker colors
-    if (!tile.visible && tile.explored) {
+    else if (!tile.visible && tile.explored) {
       switch (tile.type) {
         case TileType.Wall:
-          return 'text-gray-500';
+          colorClass = 'text-gray-500';
+          break;
         case TileType.Floor:
-          return 'text-gray-600';
+          colorClass = 'text-gray-600';
+          break;
         default:
-          return 'text-gray-600';
+          colorClass = 'text-gray-600';
       }
     }
-
     // Not explored - completely dark
-    if (!tile.visible && !tile.explored) {
-      return 'text-gray-950';
+    else {
+      colorClass = 'text-gray-950';
     }
 
-    // Currently visible tiles - bright colors
-    switch (tile.type) {
-      case TileType.Wall:
-        return 'text-gray-300';
-      case TileType.Floor:
-        return 'text-gray-400';
-      default:
-        return 'text-gray-400';
+    // Add target cursor background (without hiding the character)
+    if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
+      colorClass += ' bg-yellow-500/50';
     }
+
+    return colorClass;
   };
 
   // Calculate viewport (center on player)
