@@ -1,73 +1,167 @@
-# React + TypeScript + Vite
+# TooHuman Roguelike - PoC
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+TooHumanにインスパイアされた伝統的なローグライクゲーム。北欧神話をテーマにしたターン制戦略ゲームです。
 
-Currently, two official plugins are available:
+## 概要
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+フレイヤ（北欧神話の愛と美と戦いの女神）を主人公とした、Tales of Maj'EyalやSword of the Stars: The Pitのような見下ろし型の伝統的ローグライクゲームです。
 
-## React Compiler
+## 主な機能
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### ゲームプレイ
+- **伝統的なローグライク**: グリッドベースのターン制戦闘
+- **ランダムダンジョン生成**: 部屋と廊下で構成されるマップ
+- **視界システム (FOV)**: シャドウキャスティングアルゴリズムによる探索
+- **パーマデス**: 死んだらやり直し
 
-## Expanding the ESLint configuration
+### 主人公: フレイヤ
+- **クラス**: チャンピオン
+- **特殊能力**:
+  - ピストルマスター: ピストルでの精度とダメージ強化
+  - クリティカルストライク: 2倍ダメージ
+  - Valiant's Might: 敵を空中に打ち上げるバトルクライ
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 敵
+1. **メフィット** (小型ドローン) - 飛行能力、Death Burst
+2. **ミサイルメフィット** (範囲攻撃) - ミサイル発射
+3. **ゴーレム** (大型敵) - 高HP・高防御、衝撃波攻撃
+4. **エリートメフィット** (強化版) - 高ステータス、レアドロップ
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### ボス: ガルム（地獄の番犬）
+- **2フェーズ制**:
+  - フェーズ1: 素早い接近戦、連続爪襲撃
+  - フェーズ2: 自律ドローン放出、突進攻撃、ビーム発射
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 装備システム
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+#### 武器 (6種類)
+**近接武器**:
+- 剣 (Swords)
+- 杖 (Staves)
+- ハンマー (Hammers)
+
+**遠距離武器**:
+- ピストル (Pistols)
+- ライフル (Rifles)
+- キャノン (Cannons)
+
+#### 装備スロット (6箇所)
+- ヘルム (頭部)
+- トルソ (胸部)
+- ショルダー (肩)
+- ガントレット (手甲)
+- レギング (脚部)
+- ブーツ (足部)
+
+#### レアリティシステム (6段階)
+- **灰色** (Common): 50%
+- **緑色** (Less Common): 30%
+- **青色** (Uncommon): 15%
+- **紫色** (Rare): 4%
+- **オレンジ色** (Very Rare): 0.9%
+- **赤色** (Epic/Elite): 0.1%
+
+### ルーンシステム
+- 装備にルーンを装着してステータス強化
+- レアリティが高いほどルーンスロットが多い
+- ルーンタイプ: Strength, Agility, Vitality, Power, Defense, Critical Chance
+
+## 操作方法
+
+- **矢印キー**: 移動 / 近接攻撃
+- **F キー**: 遠隔攻撃のターゲットモード切替
+- **I キー**: インベントリ表示
+- **Enter**: 遠隔攻撃実行
+- **ESC**: ターゲットモードキャンセル
+
+## ゲームフロー
+
+1. キャラクター選択画面
+2. ステージ1開始
+3. 敵と戦闘 (4種類の敵)
+4. 全ての敵を倒すとボス出現
+5. ガルムを倒してステージクリア
+6. 勝利/敗北画面
+
+## 技術スタック
+
+- **React 19** + **TypeScript** (strict mode)
+- **Vite** - ビルドツール
+- **Tailwind CSS v4** - スタイリング
+- **ローグライクメカニクス**: パスファインディング、AI、FOV、ターン制戦闘
+
+## セットアップ
+
+```bash
+# 依存関係のインストール
+npm install
+
+# 開発サーバー起動
+npm run dev
+
+# ビルド
+npm run build
+
+# プレビュー
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## プロジェクト構造
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/          # Reactコンポーネント
+│   ├── CharacterSelect.tsx
+│   ├── Game.tsx
+│   ├── GameMap.tsx
+│   ├── HUD.tsx
+│   ├── Inventory.tsx
+│   └── MessageLog.tsx
+├── types/              # TypeScript型定義
+│   └── game.ts
+├── utils/              # ゲームロジック
+│   ├── ai.ts          # 敵AI・パスファインディング
+│   ├── combat.ts      # 戦闘システム
+│   ├── fov.ts         # 視界計算
+│   ├── gameInit.ts    # ゲーム初期化
+│   ├── itemGenerator.ts  # アイテム生成
+│   └── mapGenerator.ts   # マップ生成
+├── App.tsx
+├── main.tsx
+└── index.css
+```
+
+## ゲームデザインの特徴
+
+### バランス調整
+- 各武器タイプに固有のベースダメージとクリティカル率
+- 装備スロットによる異なるステータスボーナス
+- レアリティに応じたステータス倍率
+- ボスの2フェーズによる段階的難易度上昇
+
+### ハクスラ要素
+- 敵を倒すと装備・武器がランダムドロップ
+- レアリティシステムによる強力な装備の収集
+- ボスは通常敵の3〜5倍のドロップ率
+
+### AI設計
+- メフィット: 積極的に追跡
+- ミサイルメフィット: 距離を保って射撃
+- ゴーレム: 低速だが近距離で強力
+- エリートメフィット: 高速で高火力
+
+## 今後の拡張予定 (このPoCでは未実装)
+
+- サイバネティクス改造システム
+- Human Route / Cybernetic Route
+- ステージ2〜4
+- ルーンの進化メカニズム
+- マルチプレイ
+
+## ライセンス
+
+MIT
+
+## 作者
+
+このプロジェクトは、TooHumanにインスパイアされたオリジナルのゲームデザインとして作成されました。
