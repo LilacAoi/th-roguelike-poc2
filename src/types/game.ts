@@ -163,7 +163,8 @@ export interface Player {
   stats: Stats;
   level: number;
   experience: number;
-  weapon: Weapon | null;
+  meleeWeapon: Weapon | null;
+  rangedWeapon: Weapon | null;
   equipment: Record<EquipmentSlot, Equipment | null>;
   inventory: {
     weapons: Weapon[];
@@ -182,4 +183,6 @@ export interface GameState {
   messageLog: string[];
   targetMode: boolean;
   targetPosition: Position | null;
+  isResting: boolean;
+  restingForFullHP: boolean;
 }

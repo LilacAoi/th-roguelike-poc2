@@ -8,17 +8,17 @@ export interface CombatResult {
   message: string;
 }
 
-export function calculatePlayerStats(player: Player): Stats {
+export function calculatePlayerStats(player: Player, weapon: Weapon | null = null): Stats {
   let stats = { ...player.stats };
 
-  // Add weapon bonuses
-  if (player.weapon) {
-    stats.attack += player.weapon.damage;
-    stats.critChance = player.weapon.critChance;
-    stats.critMultiplier = player.weapon.critMultiplier;
+  // Add weapon bonuses (use provided weapon if specified)
+  if (weapon) {
+    stats.attack += weapon.damage;
+    stats.critChance = weapon.critChance;
+    stats.critMultiplier = weapon.critMultiplier;
 
     // Add rune bonuses from weapon
-    player.weapon.equippedRunes.forEach((rune) => {
+    weapon.equippedRunes.forEach((rune) => {
       applyRuneBonus(stats, rune.type, rune.bonus);
     });
   }
@@ -113,7 +113,7 @@ export function playerMeleeAttack(
   player: Player,
   enemy: Enemy
 ): CombatResult {
-  const playerStats = calculatePlayerStats(player);
+  const playerStats = calculatePlayerStats(player, player.meleeWeapon);
   return performAttack(playerStats, enemy.stats, 'Freya', enemy.name);
 }
 
@@ -122,11 +122,11 @@ export function playerRangedAttack(
   enemy: Enemy,
   distance: number
 ): CombatResult | null {
-  if (!player.weapon) {
+  if (!player.rangedWeapon) {
     return null;
   }
 
-  if (player.weapon.range < distance) {
+  if (player.rangedWeapon.range < distance) {
     return {
       damage: 0,
       isCritical: false,
@@ -135,7 +135,7 @@ export function playerRangedAttack(
     };
   }
 
-  const playerStats = calculatePlayerStats(player);
+  const playerStats = calculatePlayerStats(player, player.rangedWeapon);
   return performAttack(playerStats, enemy.stats, 'Freya', enemy.name);
 }
 

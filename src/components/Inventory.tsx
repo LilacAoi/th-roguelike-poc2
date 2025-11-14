@@ -38,29 +38,47 @@ export const Inventory: React.FC<InventoryProps> = ({
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-yellow-400 mb-3">Equipped</h3>
 
-          {/* Current Weapon */}
-          <div className="bg-gray-800 p-3 rounded mb-3">
-            <h4 className="text-sm font-semibold text-cyan-400 mb-2">Weapon</h4>
-            {player.weapon ? (
-              <div className="text-sm">
-                <p className={`font-semibold ${RarityColors[player.weapon.rarity]}`}>
-                  {player.weapon.name}
-                </p>
-                <p className="text-gray-400 text-xs">
-                  {player.weapon.type} | Damage: {player.weapon.damage} | Range: {player.weapon.range}
-                </p>
-                <p className="text-gray-400 text-xs">
-                  Crit: {(player.weapon.critChance * 100).toFixed(0)}% | Mult: {player.weapon.critMultiplier.toFixed(1)}x
-                </p>
-                {player.weapon.runeSlots > 0 && (
-                  <p className="text-gray-400 text-xs">
-                    Rune Slots: {player.weapon.equippedRunes.length}/{player.weapon.runeSlots}
+          {/* Current Weapons */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {/* Melee Weapon */}
+            <div className="bg-gray-800 p-3 rounded">
+              <h4 className="text-sm font-semibold text-orange-400 mb-2">Melee Weapon</h4>
+              {player.meleeWeapon ? (
+                <div className="text-sm">
+                  <p className={`font-semibold ${RarityColors[player.meleeWeapon.rarity]}`}>
+                    {player.meleeWeapon.name}
                   </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-sm">None</p>
-            )}
+                  <p className="text-gray-400 text-xs">
+                    {player.meleeWeapon.type} | DMG: {player.meleeWeapon.damage}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    Crit: {(player.meleeWeapon.critChance * 100).toFixed(0)}% | x{player.meleeWeapon.critMultiplier.toFixed(1)}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">None</p>
+              )}
+            </div>
+
+            {/* Ranged Weapon */}
+            <div className="bg-gray-800 p-3 rounded">
+              <h4 className="text-sm font-semibold text-purple-400 mb-2">Ranged Weapon</h4>
+              {player.rangedWeapon ? (
+                <div className="text-sm">
+                  <p className={`font-semibold ${RarityColors[player.rangedWeapon.rarity]}`}>
+                    {player.rangedWeapon.name}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    {player.rangedWeapon.type} | RNG: {player.rangedWeapon.range}
+                  </p>
+                  <p className="text-gray-400 text-xs">
+                    Crit: {(player.rangedWeapon.critChance * 100).toFixed(0)}% | x{player.rangedWeapon.critMultiplier.toFixed(1)}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">None</p>
+              )}
+            </div>
           </div>
 
           {/* Equipment Grid */}

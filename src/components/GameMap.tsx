@@ -17,31 +17,29 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
       return '@';
     }
 
-    // Check if boss is on this tile
-    if (boss && boss.position.x === x && boss.position.y === y) {
-      return 'G';
-    }
-
-    // Check if any enemy is on this tile
-    const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
-    if (enemy) {
-      switch (enemy.type) {
-        case EnemyType.Mephit:
-          return 'm';
-        case EnemyType.MissileMephit:
-          return 'M';
-        case EnemyType.Golem:
-          return 'g';
-        case EnemyType.EliteMephit:
-          return 'E';
-        default:
-          return 'e';
+    // Only show enemies/boss if tile is visible
+    if (tile.visible) {
+      // Check if boss is on this tile
+      if (boss && boss.position.x === x && boss.position.y === y) {
+        return 'G';
       }
-    }
 
-    // Check if this is the target position
-    if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
-      return 'X';
+      // Check if any enemy is on this tile
+      const enemy = enemies.find((e) => e.position.x === x && e.position.y === y);
+      if (enemy) {
+        switch (enemy.type) {
+          case EnemyType.Mephit:
+            return 'm';
+          case EnemyType.MissileMephit:
+            return 'M';
+          case EnemyType.Golem:
+            return 'g';
+          case EnemyType.EliteMephit:
+            return 'E';
+          default:
+            return 'e';
+        }
+      }
     }
 
     // Show tile based on visibility
@@ -80,17 +78,27 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
 
   const getTileColor = (x: number, y: number): string => {
     const tile = map[y][x];
+    let baseColor = '';
+    let bgColor = '';
+
+    // Check if this is the target cursor position
+    const isTargetCursor = targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y;
+    if (isTargetCursor) {
+      bgColor = 'bg-yellow-500';
+    }
 
     // Player is always bright white
     if (player.position.x === x && player.position.y === y) {
-      return 'text-white font-bold';
+      baseColor = 'text-white font-bold';
+      return `${baseColor} ${bgColor}`.trim();
     }
 
     // Only show enemies if tile is visible
     if (tile.visible) {
       // Boss is bright red
       if (boss && boss.position.x === x && boss.position.y === y) {
-        return 'text-red-500 font-bold';
+        baseColor = 'text-red-500 font-bold';
+        return `${baseColor} ${bgColor}`.trim();
       }
 
       // Enemy colors (only if visible)
@@ -98,43 +106,49 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
       if (enemy) {
         switch (enemy.type) {
           case EnemyType.Mephit:
-            return 'text-yellow-300 font-bold';
+            baseColor = 'text-yellow-300 font-bold';
+            break;
           case EnemyType.MissileMephit:
-            return 'text-orange-500 font-bold';
+            baseColor = 'text-orange-500 font-bold';
+            break;
           case EnemyType.Golem:
-            return 'text-cyan-400 font-bold';
+            baseColor = 'text-cyan-400 font-bold';
+            break;
           case EnemyType.EliteMephit:
-            return 'text-purple-500 font-bold';
+            baseColor = 'text-purple-500 font-bold';
+            break;
           default:
-            return 'text-red-400 font-bold';
+            baseColor = 'text-red-400 font-bold';
         }
-      }
-
-      // Target cursor
-      if (targetMode && targetPosition && targetPosition.x === x && targetPosition.y === y) {
-        return 'text-yellow-300 font-bold bg-yellow-900/30';
+        return `${baseColor} ${bgColor}`.trim();
       }
     }
 
     // Explored but not currently visible - darker colors
     if (!tile.visible && tile.explored) {
-      return 'text-gray-400';
+      baseColor = 'text-gray-400';
+      return `${baseColor} ${bgColor}`.trim();
     }
 
     // Not explored - completely dark
     if (!tile.visible && !tile.explored) {
-      return 'text-gray-950';
+      baseColor = 'text-gray-950';
+      return `${baseColor} ${bgColor}`.trim();
     }
 
     // Currently visible tiles - bright colors
     switch (tile.type) {
       case TileType.Wall:
-        return 'text-gray-500';
+        baseColor = 'text-gray-500';
+        break;
       case TileType.Floor:
-        return 'text-gray-300';
+        baseColor = 'text-gray-300';
+        break;
       default:
-        return 'text-gray-400';
+        baseColor = 'text-gray-400';
     }
+
+    return `${baseColor} ${bgColor}`.trim();
   };
 
   // Calculate viewport (center on player)

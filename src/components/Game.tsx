@@ -218,6 +218,51 @@ export const Game: React.FC = () => {
     processTurn();
   }, [gameState, addMessage]);
 
+  const handleResting = useCallback(
+    (fullRecover: boolean) => {
+      if (gameState.gameStatus !== 'playing') return;
+      if (gameState.targetMode) return;
+
+      // 既に最大 HP の場合
+      if (gameState.player.stats.hp >= gameState.player.stats.maxHp) {
+        addMessage('Already at maximum HP.');
+        return;
+      }
+
+      if (fullRecover) {
+        // Shift+R: 完全回復まで自動休息
+        setGameState((prev) => ({
+          ...prev,
+          isResting: true,
+          restingForFullHP: true,
+        }));
+        const turnsNeeded = Math.ceil((gameState.player.stats.maxHp - gameState.player.stats.hp) / 5);
+        addMessage(`Resting for full recovery... (${turnsNeeded} turns needed)`);
+
+        // 自動休息のためのターン処理を開始
+        setTimeout(() => processTurn(), 100);
+      } else {
+        // R: 1 ターン休息
+        setGameState((prev) => {
+          const newHp = Math.min(prev.player.stats.hp + 5, prev.player.stats.maxHp);
+          return {
+            ...prev,
+            player: {
+              ...prev.player,
+              stats: {
+                ...prev.player.stats,
+                hp: newHp,
+              },
+            },
+          };
+        });
+        addMessage('You rest for a moment. HP +5');
+        processTurn();
+      }
+    },
+    [gameState, addMessage, processTurn]
+  );
+
   const dropLoot = useCallback((enemyLevel: number, isBoss: boolean) => {
     const dropChance = isBoss ? 1.0 : 0.7;
 
@@ -276,6 +321,40 @@ export const Game: React.FC = () => {
       // Deep copy the map to ensure React detects changes
       const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
       const newState = { ...prev, map: newMap };
+
+      // 休息モードのチェック
+      if (newState.isResting && newState.restingForFullHP) {
+        // 敵が FOV 内にいるかチェック
+        const enemyInSight = newState.enemies.some((enemy) => {
+          const tile = newMap[enemy.position.y]?.[enemy.position.x];
+          return tile?.visible;
+        });
+
+        if (enemyInSight) {
+          // 敵が見えたら休息を中断
+          newState.messageLog.push('An enemy appeared! Resting interrupted.');
+          newState.isResting = false;
+          newState.restingForFullHP = false;
+          return newState;
+        }
+
+        // HP 回復
+        const newHp = Math.min(newState.player.stats.hp + 5, newState.player.stats.maxHp);
+        newState.player.stats.hp = newHp;
+
+        if (newHp >= newState.player.stats.maxHp) {
+          newState.messageLog.push('HP fully recovered.');
+          newState.isResting = false;
+          newState.restingForFullHP = false;
+          return newState;
+        } else {
+          const turnsRemaining = Math.ceil((newState.player.stats.maxHp - newHp) / 5);
+          newState.messageLog.push(`Resting... (${turnsRemaining} turns until full recovery)`);
+          // 次のターンを自動的に処理
+          setTimeout(() => processTurn(), 100);
+          return newState;
+        }
+      }
 
       // Move enemies
       newState.enemies.forEach((enemy) => {
@@ -370,13 +449,31 @@ export const Game: React.FC = () => {
         return;
       }
 
-      // Target mode toggle
+      // Target mode toggle / confirm ranged attack
       if (e.key === 'f' || e.key === 'F') {
-        setGameState((prev) => ({
-          ...prev,
-          targetMode: !prev.targetMode,
-          targetPosition: prev.targetMode ? null : prev.player.position,
-        }));
+        if (gameState.targetMode) {
+          // Already in target mode, execute attack
+          handleRangedAttack();
+        } else {
+          // Enter target mode
+          setGameState((prev) => ({
+            ...prev,
+            targetMode: true,
+            targetPosition: prev.player.position,
+          }));
+        }
+        return;
+      }
+
+      // Resting (R key)
+      if (e.key === 'r' || e.key === 'R') {
+        if (e.shiftKey) {
+          // Shift+R: 完全回復まで自動休息
+          handleResting(true);
+        } else {
+          // R: 1 ターン休息
+          handleResting(false);
+        }
         return;
       }
 
@@ -432,7 +529,7 @@ export const Game: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameState, handlePlayerMove, handleTargetMove, handleRangedAttack]);
+  }, [gameState, handlePlayerMove, handleTargetMove, handleRangedAttack, handleResting]);
 
   const handleStartGame = () => {
     setGameState((prev) => {
@@ -445,7 +542,8 @@ export const Game: React.FC = () => {
 
   const handleEquipWeapon = (weapon: Weapon) => {
     setGameState((prev) => {
-      const oldWeapon = prev.player.weapon;
+      const isMelee = weapon.range === 1;
+      const oldWeapon = isMelee ? prev.player.meleeWeapon : prev.player.rangedWeapon;
       const newWeapons = prev.player.inventory.weapons.filter((w) => w.id !== weapon.id);
 
       if (oldWeapon) {
@@ -458,7 +556,8 @@ export const Game: React.FC = () => {
         ...prev,
         player: {
           ...prev.player,
-          weapon,
+          meleeWeapon: isMelee ? weapon : prev.player.meleeWeapon,
+          rangedWeapon: isMelee ? prev.player.rangedWeapon : weapon,
           inventory: {
             ...prev.player.inventory,
             weapons: newWeapons,
