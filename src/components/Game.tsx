@@ -23,13 +23,6 @@ export const Game: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(() => initializeGame());
   const [inventoryOpen, setInventoryOpen] = useState(false);
 
-  // Update FOV when player moves
-  useEffect(() => {
-    if (gameState.gameStatus === 'playing') {
-      calculateFOV(gameState.map, gameState.player.position, 10);
-    }
-  }, [gameState.player.position, gameState.gameStatus]);
-
   const addMessage = useCallback((message: string) => {
     setGameState((prev) => ({
       ...prev,
@@ -76,8 +69,13 @@ export const Game: React.FC = () => {
               spawnBoss(prev);
             }
 
+            // Update FOV after removing enemy
+            const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+            calculateFOV(newMap, prev.player.position, 10);
+
             return {
               ...prev,
+              map: newMap,
               enemies: newEnemies,
             };
           });
@@ -112,13 +110,18 @@ export const Game: React.FC = () => {
       }
 
       // Move player
-      setGameState((prev) => ({
-        ...prev,
-        player: {
-          ...prev.player,
-          position: newPos,
-        },
-      }));
+      setGameState((prev) => {
+        const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+        calculateFOV(newMap, newPos, 10);
+        return {
+          ...prev,
+          map: newMap,
+          player: {
+            ...prev.player,
+            position: newPos,
+          },
+        };
+      });
 
       // Enemy turn after player moves
       processTurn();
@@ -171,8 +174,13 @@ export const Game: React.FC = () => {
             spawnBoss(prev);
           }
 
+          // Update FOV after removing enemy
+          const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+          calculateFOV(newMap, prev.player.position, 10);
+
           return {
             ...prev,
+            map: newMap,
             enemies: newEnemies,
             targetMode: false,
             targetPosition: null,
@@ -416,8 +424,12 @@ export const Game: React.FC = () => {
   }, [gameState, handlePlayerMove, handleTargetMove, handleRangedAttack]);
 
   const handleStartGame = () => {
-    setGameState((prev) => ({ ...prev, gameStatus: 'playing' }));
-    calculateFOV(gameState.map, gameState.player.position, 10);
+    setGameState((prev) => {
+      // Create a deep copy of the map for FOV calculation
+      const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+      calculateFOV(newMap, prev.player.position, 10);
+      return { ...prev, gameStatus: 'playing', map: newMap };
+    });
   };
 
   const handleEquipWeapon = (weapon: Weapon) => {

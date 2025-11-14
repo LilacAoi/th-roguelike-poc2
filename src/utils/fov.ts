@@ -12,103 +12,71 @@ export function calculateFOV(
     }
   }
 
-  // Use shadowcasting algorithm for FOV
-  map[origin.y][origin.x].visible = true;
-  map[origin.y][origin.x].explored = true;
+  // Simple distance-based FOV with line-of-sight checking
+  for (let y = 0; y < map.length; y++) {
+    for (let x = 0; x < map[0].length; x++) {
+      const dx = x - origin.x;
+      const dy = y - origin.y;
+      const distSquared = dx * dx + dy * dy;
+      const radiusSquared = radius * radius;
 
-  // 8 octants for shadowcasting
-  for (let octant = 0; octant < 8; octant++) {
-    castLight(map, origin, radius, 1, 1.0, 0.0, octant);
+      // Check if within radius
+      if (distSquared <= radiusSquared) {
+        // Check line of sight with simple raycasting
+        if (hasLineOfSight(map, origin, { x, y }, radius)) {
+          map[y][x].visible = true;
+          map[y][x].explored = true;
+        }
+      }
+    }
   }
 }
 
-function castLight(
+function hasLineOfSight(
   map: Tile[][],
   origin: Position,
-  radius: number,
-  row: number,
-  startSlope: number,
-  endSlope: number,
-  octant: number
-): void {
-  if (startSlope < endSlope) {
-    return;
-  }
+  target: Position,
+  _radius: number
+): boolean {
+  // Simple line-of-sight check using Bresenham's algorithm
+  const dx = Math.abs(target.x - origin.x);
+  const dy = Math.abs(target.y - origin.y);
+  const sx = origin.x < target.x ? 1 : -1;
+  const sy = origin.y < target.y ? 1 : -1;
+  let err = dx - dy;
 
-  let nextStartSlope = startSlope;
+  let currentX = origin.x;
+  let currentY = origin.y;
 
-  for (let i = row; i <= radius; i++) {
-    let blocked = false;
-
-    for (let dx = -i, dy = -i; dx <= 0; dx++) {
-      const currentSlope = (dx - 0.5) / (dy + 0.5);
-      if (currentSlope < endSlope) {
-        continue;
-      }
-      if (currentSlope > startSlope) {
-        break;
-      }
-
-      const pos = transformOctant(origin, dx, dy, octant);
-
-      if (!isInBounds(map, pos)) {
-        continue;
-      }
-
-      const distanceSquared = dx * dx + dy * dy;
-      if (distanceSquared <= radius * radius) {
-        map[pos.y][pos.x].visible = true;
-        map[pos.y][pos.x].explored = true;
-      }
-
-      if (blocked) {
-        if (!map[pos.y][pos.x].transparent) {
-          nextStartSlope = currentSlope;
-          continue;
-        } else {
-          blocked = false;
-          startSlope = nextStartSlope;
-        }
-      } else {
-        if (!map[pos.y][pos.x].transparent && i < radius) {
-          blocked = true;
-          castLight(map, origin, radius, i + 1, startSlope, currentSlope, octant);
-          nextStartSlope = currentSlope;
-        }
-      }
+  while (true) {
+    // Always mark current position as visible
+    if (isInBounds(map, { x: currentX, y: currentY })) {
+      map[currentY][currentX].visible = true;
+      map[currentY][currentX].explored = true;
     }
 
-    if (blocked) {
-      break;
+    if (currentX === target.x && currentY === target.y) {
+      return true;
     }
-  }
-}
 
-function transformOctant(
-  origin: Position,
-  dx: number,
-  dy: number,
-  octant: number
-): Position {
-  switch (octant) {
-    case 0:
-      return { x: origin.x - dx, y: origin.y - dy };
-    case 1:
-      return { x: origin.x - dy, y: origin.y - dx };
-    case 2:
-      return { x: origin.x + dy, y: origin.y - dx };
-    case 3:
-      return { x: origin.x + dx, y: origin.y - dy };
-    case 4:
-      return { x: origin.x + dx, y: origin.y + dy };
-    case 5:
-      return { x: origin.x + dy, y: origin.y + dx };
-    case 6:
-      return { x: origin.x - dy, y: origin.y + dx };
-    case 7:
-      return { x: origin.x - dx, y: origin.y + dy };
-    default:
-      return origin;
+    // Stop if we hit a wall (except at the target)
+    if (
+      isInBounds(map, { x: currentX, y: currentY }) &&
+      !map[currentY][currentX].transparent &&
+      !(currentX === target.x && currentY === target.y)
+    ) {
+      return false;
+    }
+
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      currentX += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      currentY += sy;
+    }
   }
 }
 

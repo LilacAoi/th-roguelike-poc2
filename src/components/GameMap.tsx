@@ -115,7 +115,7 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
 
     // Tile colors
     if (!tile.visible && tile.explored) {
-      return 'text-gray-600';
+      return 'text-gray-400';
     }
 
     if (!tile.visible) {
@@ -124,11 +124,11 @@ export const GameMap: React.FC<GameMapProps> = ({ gameState }) => {
 
     switch (tile.type) {
       case TileType.Wall:
-        return 'text-gray-400';
-      case TileType.Floor:
-        return 'text-gray-700';
-      default:
         return 'text-gray-500';
+      case TileType.Floor:
+        return 'text-gray-300';
+      default:
+        return 'text-gray-400';
     }
   };
 
