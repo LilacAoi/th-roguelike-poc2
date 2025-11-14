@@ -161,42 +161,61 @@ export function initializeGame(): GameState {
     },
   };
 
-  // Create enemies
+  // Helper function to check if position is far enough from player
+  const isValidEnemyPosition = (pos: Position, playerPosition: Position, minDistance: number): boolean => {
+    const distance = Math.abs(pos.x - playerPosition.x) + Math.abs(pos.y - playerPosition.y);
+    return distance >= minDistance;
+  };
+
+  // Create enemies with reduced count and minimum distance from player
   const enemies: Enemy[] = [];
-  const numMephits = 8;
-  const numMissileMephits = 5;
-  const numGolems = 3;
-  const numEliteMephits = 2;
+  const numMephits = 5;
+  const numMissileMephits = 3;
+  const numGolems = 2;
+  const numEliteMephits = 1;
+  const minDistanceFromPlayer = 12; // Minimum Manhattan distance from player
 
   for (let i = 0; i < numMephits; i++) {
     let pos = getRandomFloorPosition(map);
-    // Ensure enemy is not on player position
-    while (pos.x === playerPos.x && pos.y === playerPos.y) {
+    let attempts = 0;
+    // Ensure enemy is far enough from player
+    while ((!isValidEnemyPosition(pos, playerPos, minDistanceFromPlayer) ||
+            pos.x === playerPos.x && pos.y === playerPos.y) && attempts < 100) {
       pos = getRandomFloorPosition(map);
+      attempts++;
     }
     enemies.push(createMephit(pos, 1));
   }
 
   for (let i = 0; i < numMissileMephits; i++) {
     let pos = getRandomFloorPosition(map);
-    while (pos.x === playerPos.x && pos.y === playerPos.y) {
+    let attempts = 0;
+    while ((!isValidEnemyPosition(pos, playerPos, minDistanceFromPlayer) ||
+            pos.x === playerPos.x && pos.y === playerPos.y) && attempts < 100) {
       pos = getRandomFloorPosition(map);
+      attempts++;
     }
     enemies.push(createMissileMephit(pos, 1));
   }
 
   for (let i = 0; i < numGolems; i++) {
     let pos = getRandomFloorPosition(map);
-    while (pos.x === playerPos.x && pos.y === playerPos.y) {
+    let attempts = 0;
+    while ((!isValidEnemyPosition(pos, playerPos, minDistanceFromPlayer) ||
+            pos.x === playerPos.x && pos.y === playerPos.y) && attempts < 100) {
       pos = getRandomFloorPosition(map);
+      attempts++;
     }
     enemies.push(createGolem(pos, 1));
   }
 
   for (let i = 0; i < numEliteMephits; i++) {
     let pos = getRandomFloorPosition(map);
-    while (pos.x === playerPos.x && pos.y === playerPos.y) {
+    let attempts = 0;
+    while ((!isValidEnemyPosition(pos, playerPos, minDistanceFromPlayer) ||
+            pos.x === playerPos.x && pos.y === playerPos.y) && attempts < 100) {
       pos = getRandomFloorPosition(map);
+      attempts++;
     }
     enemies.push(createEliteMephit(pos, 1));
   }
