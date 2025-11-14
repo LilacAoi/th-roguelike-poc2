@@ -23,12 +23,8 @@ export const Game: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(() => initializeGame());
   const [inventoryOpen, setInventoryOpen] = useState(false);
 
-  // Update FOV when player moves
-  useEffect(() => {
-    if (gameState.gameStatus === 'playing') {
-      calculateFOV(gameState.map, gameState.player.position, 10);
-    }
-  }, [gameState.player.position, gameState.gameStatus]);
+  // FOV is now calculated directly in movement functions and handleStartGame
+  // No useEffect needed to avoid infinite loops
 
   const addMessage = useCallback((message: string) => {
     setGameState((prev) => ({
@@ -76,9 +72,14 @@ export const Game: React.FC = () => {
               spawnBoss(prev);
             }
 
+            // Deep copy map and update FOV
+            const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+            calculateFOV(newMap, prev.player.position, 10);
+
             return {
               ...prev,
               enemies: newEnemies,
+              map: newMap,
             };
           });
         }
@@ -111,14 +112,22 @@ export const Game: React.FC = () => {
         return;
       }
 
-      // Move player
-      setGameState((prev) => ({
-        ...prev,
-        player: {
-          ...prev.player,
-          position: newPos,
-        },
-      }));
+      // Move player and update FOV
+      setGameState((prev) => {
+        // Deep copy the map to ensure React detects the change
+        const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+        // Calculate FOV for new position
+        calculateFOV(newMap, newPos, 10);
+
+        return {
+          ...prev,
+          player: {
+            ...prev.player,
+            position: newPos,
+          },
+          map: newMap,
+        };
+      });
 
       // Enemy turn after player moves
       processTurn();
@@ -171,11 +180,16 @@ export const Game: React.FC = () => {
             spawnBoss(prev);
           }
 
+          // Deep copy map and update FOV
+          const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+          calculateFOV(newMap, prev.player.position, 10);
+
           return {
             ...prev,
             enemies: newEnemies,
             targetMode: false,
             targetPosition: null,
+            map: newMap,
           };
         });
       } else if (targetBoss) {
@@ -197,8 +211,12 @@ export const Game: React.FC = () => {
       }
     }
 
-    // Exit target mode
-    setGameState((prev) => ({ ...prev, targetMode: false, targetPosition: null }));
+    // Exit target mode and update FOV
+    setGameState((prev) => {
+      const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+      calculateFOV(newMap, prev.player.position, 10);
+      return { ...prev, targetMode: false, targetPosition: null, map: newMap };
+    });
 
     // Enemy turn after player attacks
     processTurn();
@@ -259,11 +277,13 @@ export const Game: React.FC = () => {
 
   const processTurn = useCallback(() => {
     setGameState((prev) => {
-      const newState = { ...prev };
+      // Deep copy the map to ensure React detects changes
+      const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+      const newState = { ...prev, map: newMap };
 
       // Move enemies
       newState.enemies.forEach((enemy) => {
-        moveEnemy(enemy, newState.player.position, newState.map, newState.enemies);
+        moveEnemy(enemy, newState.player.position, newMap, newState.enemies);
 
         // Check if enemy can attack player
         if (canEnemyAttackPlayer(enemy, newState.player.position)) {
@@ -279,7 +299,7 @@ export const Game: React.FC = () => {
 
       // Boss turn
       if (newState.boss) {
-        moveEnemy(newState.boss, newState.player.position, newState.map, [
+        moveEnemy(newState.boss, newState.player.position, newMap, [
           ...newState.enemies,
           newState.boss,
         ]);
@@ -308,6 +328,9 @@ export const Game: React.FC = () => {
           newState.gameStatus = 'defeat';
         }
       }
+
+      // Recalculate FOV after enemy movement
+      calculateFOV(newMap, newState.player.position, 10);
 
       newState.turnCount++;
       return newState;
@@ -416,8 +439,13 @@ export const Game: React.FC = () => {
   }, [gameState, handlePlayerMove, handleTargetMove, handleRangedAttack]);
 
   const handleStartGame = () => {
-    setGameState((prev) => ({ ...prev, gameStatus: 'playing' }));
-    calculateFOV(gameState.map, gameState.player.position, 10);
+    setGameState((prev) => {
+      // Deep copy the map to ensure React detects the change
+      const newMap = prev.map.map(row => row.map(tile => ({ ...tile })));
+      // Calculate FOV immediately after setting game to playing
+      calculateFOV(newMap, prev.player.position, 10);
+      return { ...prev, gameStatus: 'playing' as const, map: newMap };
+    });
   };
 
   const handleEquipWeapon = (weapon: Weapon) => {
