@@ -238,9 +238,6 @@ export const Game: React.FC = () => {
         }));
         const turnsNeeded = Math.ceil((gameState.player.stats.maxHp - gameState.player.stats.hp) / 5);
         addMessage(`Resting for full recovery... (${turnsNeeded} turns needed)`);
-
-        // 自動休息のためのターン処理を開始
-        setTimeout(() => processTurn(), 100);
       } else {
         // R: 1 ターン休息
         setGameState((prev) => {
@@ -257,10 +254,9 @@ export const Game: React.FC = () => {
           };
         });
         addMessage('You rest for a moment. HP +5');
-        processTurn();
       }
     },
-    [gameState, addMessage, processTurn]
+    [gameState, addMessage]
   );
 
   const dropLoot = useCallback((enemyLevel: number, isBoss: boolean) => {
