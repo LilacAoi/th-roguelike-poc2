@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-rarity-common: #9ca3af;
+  --color-rarity-less-common: #10b981;
+  --color-rarity-uncommon: #3b82f6;
+  --color-rarity-rare: #8b5cf6;
+  --color-rarity-very-rare: #f97316;
+  --color-rarity-epic: #ef4444;
+}
+
+body {
+  @apply bg-gray-900 text-gray-100 m-0 p-0;
+  font-family: 'Courier New', monospace;
+}
+
+.roguelike-tile {
+  @apply w-6 h-6 flex items-center justify-center font-mono text-sm;
+}
+
+.rarity-common {
+  color: var(--color-rarity-common);
+}
+
+.rarity-less-common {
+  color: var(--color-rarity-less-common);
+}
+
+.rarity-uncommon {
+  color: var(--color-rarity-uncommon);
+}
+
+.rarity-rare {
+  color: var(--color-rarity-rare);
+}
+
+.rarity-very-rare {
+  color: var(--color-rarity-very-rare);
+}
+
+.rarity-epic {
+  color: var(--color-rarity-epic);
+}
